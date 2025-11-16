@@ -1,9 +1,13 @@
-import type {NextConfig} from 'next';
-import type {NextConfig} from 'next';
+import type { NextConfig } from 'next';
+
+// Allow choosing build output mode:
+// - `standalone` (default) for server deployments
+// - `export` when `EXPORT_STATIC=true` or when running in GitHub Actions
+const shouldExport = process.env.EXPORT_STATIC === 'true' || process.env.GITHUB_ACTIONS === 'true';
 
 const nextConfig: NextConfig = {
-  // Produce a standalone server build for portable deployments
-  output: 'standalone',
+  // Choose output based on environment
+  output: shouldExport ? 'export' : 'standalone',
   typescript: {
     ignoreBuildErrors: true,
   },
