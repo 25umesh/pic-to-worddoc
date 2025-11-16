@@ -28,6 +28,9 @@ jobs:
   # Build job
   build:
     runs-on: ubuntu-latest
+    env:
+      # Force Next.js to output a static export on CI so Pages can deploy
+      EXPORT_STATIC: 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,6 +64,9 @@ jobs:
           #
           # You may remove this line if you want to manage the configuration yourself.
           static_site_generator: next
+          # If a Pages site doesn't yet exist, enable Pages for this repository
+          # using GitHub Actions so the action can continue.
+          enablement: 'actions'
       - name: Restore cache
         uses: actions/cache@v4
         with:
