@@ -215,25 +215,27 @@ export default function Home() {
                               const fileWithPreview = page[imgIndex];
                               const globalIndex = pageIndex * 6 + imgIndex;
                               return fileWithPreview ? (
-                                <div key={fileWithPreview.preview} className="relative group w-full h-full bg-muted rounded overflow-hidden">
+                                <div key={fileWithPreview.preview} className="relative group w-full h-full bg-muted rounded overflow-hidden flex flex-col items-center justify-center">
+                                  <div className="absolute top-1 text-center w-full z-10">
+                                  {(numbering === 'auto' || (numbering === 'manual' && fileWithPreview.manualNumber)) && (
+                                    <div className="text-black text-xs font-bold bg-white/50 rounded-full inline-block px-1.5 py-0.5">
+                                      {numbering === 'auto' ? globalIndex + 1 : fileWithPreview.manualNumber}
+                                    </div>
+                                  )}
+                                  </div>
                                   <Image
                                     src={fileWithPreview.preview}
                                     alt={`Preview ${globalIndex + 1}`}
                                     fill
                                     className="object-cover"
                                   />
-                                   {(numbering === 'auto' || (numbering === 'manual' && fileWithPreview.manualNumber)) && (
-                                    <div className="absolute top-1 left-1 bg-black/50 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                                      {numbering === 'auto' ? globalIndex + 1 : fileWithPreview.manualNumber}
-                                    </div>
-                                  )}
                                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
                                     {numbering === 'manual' && (
                                       <div className="absolute top-0 left-0 right-0 p-1">
                                         <Input
                                           type="text"
                                           placeholder="#"
-                                          value={fileWithPreview.manualNumber}
+                                          value={fileWithPreview.manualNumber || ''}
                                           onChange={(e) => handleManualNumberChange(globalIndex, e.target.value)}
                                           className="h-7 text-xs w-full bg-white/80"
                                           onClick={(e) => e.stopPropagation()}

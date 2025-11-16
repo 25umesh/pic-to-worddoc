@@ -42,44 +42,41 @@ export const generateDocx = async (imageDetails: ImageDetail[]) => {
       const cells = [startIndex, startIndex + 1].map(i => {
         const imageDetail = chunk[i];
         if (imageDetail) {
+          
+          const cellChildren = [];
+
+          if (imageDetail.number) {
+            cellChildren.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: imageDetail.number,
+                    bold: true,
+                    size: 24, // 12pt
+                    font: 'Calibri',
+                  })
+                ],
+                alignment: AlignmentType.CENTER,
+              })
+            );
+          }
+
           const imageRun = new ImageRun({
             data: imageDetail.buffer,
             transformation: {
               width: 250,
               height: 250,
             },
-            floating: {
-              horizontalPosition: {
-                relative: 'column',
-                align: 'center',
-              },
-              verticalPosition: {
-                relative: 'paragraph',
-                align: 'center',
-              },
-            },
           });
-
-          const children = [imageRun];
-          if (imageDetail.number) {
-            children.push(
-              new TextRun({
-                text: imageDetail.number,
-                bold: true,
-                color: 'FFFFFF',
-                size: 24, // 12pt
-                font: 'Calibri',
-              })
-            );
-          }
-
-          const para = new Paragraph({
-            children: children,
+          
+          cellChildren.push(new Paragraph({
+            children: [imageRun],
             alignment: AlignmentType.CENTER,
-          });
+          }));
+
 
           return new TableCell({
-            children: [para],
+            children: cellChildren,
             verticalAlign: VerticalAlign.CENTER,
             width: {
               size: 4535,
