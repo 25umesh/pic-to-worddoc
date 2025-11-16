@@ -22,10 +22,6 @@ export const generateDocx = async (imageDetails: ImageDetail[]) => {
     return;
   }
 
-  const doc = new Document({
-    sections: [],
-  });
-
   const imageBuffers = await Promise.all(imageDetails.map(detail => readFileAsBuffer(detail.file)));
   
   const processedImageDetails = imageDetails.map((detail, index) => ({
@@ -160,7 +156,9 @@ export const generateDocx = async (imageDetails: ImageDetail[]) => {
     };
   });
   
-  doc.setSections(sections);
+  const doc = new Document({
+    sections: sections,
+  });
 
   try {
     const blob = await Packer.toBlob(doc);
