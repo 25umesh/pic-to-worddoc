@@ -45,11 +45,8 @@ jobs:
           node-version: "20"
           cache: ${{ steps.detect-package-manager.outputs.manager }}
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-        with:
-          # Allows automatic adjustments for Next static export
-          static_site_generator: next
+      # Configure Pages is optional for static exports; skipping to avoid issues
+      # that can occur with auto-detection when using Next 15 output: export
 
       - name: Restore cache
         uses: actions/cache@v4
