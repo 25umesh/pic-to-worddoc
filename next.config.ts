@@ -2,6 +2,8 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Produce a standalone server build for portable deployments
+  output: 'standalone',
   typescript: {
     ignoreBuildErrors: true,
   },
