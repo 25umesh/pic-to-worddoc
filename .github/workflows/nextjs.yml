@@ -51,6 +51,9 @@ jobs:
           # Automatically inject basePath in your Next.js configuration file and disable
           # server side image optimization. Remove this if you want to manage config yourself.
           static_site_generator: next
+          # If a Pages site doesn't yet exist, enable Pages for this repository
+          # using GitHub Actions so the action can continue.
+          enablement: 'actions'
 
       - name: Restore cache
         uses: actions/cache@v4
