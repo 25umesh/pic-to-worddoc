@@ -1,5 +1,11 @@
-import { Document, Packer, PageBreak, ImageRun, Paragraph, Table, TableCell, TableRow, WidthType, BorderStyle } from 'docx';
+
+import { Document, Packer, PageBreak, ImageRun, Paragraph, Table, TableCell, TableRow, WidthType, BorderStyle, TextRun, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
+
+type ImageDetail = {
+  file: File;
+  number?: string;
+};
 
 const readFileAsBuffer = (file: File): Promise<ArrayBuffer> => {
   return new Promise((resolve, reject) => {
@@ -10,8 +16,8 @@ const readFileAsBuffer = (file: File): Promise<ArrayBuffer> => {
   });
 };
 
-export const generateDocx = async (files: File[]) => {
-  if (files.length === 0) {
+export const generateDocx = async (imageDetails: ImageDetail[]) => {
+  if (imageDetails.length === 0) {
     return;
   }
 
@@ -19,25 +25,117 @@ export const generateDocx = async (files: File[]) => {
     sections: [],
   });
 
-  const imageBuffers = await Promise.all(files.map(file => readFileAsBuffer(file)));
+  const imageBuffers = await Promise.all(imageDetails.map(detail => readFileAsBuffer(detail.file)));
+  
+  const processedImageDetails = imageDetails.map((detail, index) => ({
+    buffer: imageBuffers[index],
+    number: detail.number,
+  }));
+
   const imageChunks = [];
-  for (let i = 0; i < imageBuffers.length; i += 6) {
-    imageChunks.push(imageBuffers.slice(i, i + 6));
+  for (let i = 0; i < processedImageDetails.length; i += 6) {
+    imageChunks.push(processedImageDetails.slice(i, i + 6));
   }
   
   const sections = imageChunks.map((chunk, index) => {
-    const imageRuns = chunk.map(buffer => {
-      return new ImageRun({
-        data: buffer,
-        transformation: {
-          width: 250, // Approx 3.4 inches, fits 2 across on A4 with margins
-          height: 250, // Let's use a square, Word will respect aspect ratio if image is not square
-        },
-      });
-    });
-
     const cells = [...Array(6)].map((_, i) => {
-      const content = imageRuns[i] ? [new Paragraph({ children: [imageRuns[i]] })] : [];
+      const imageDetail = chunk[i];
+      let content: Paragraph[] = [];
+      
+      if (imageDetail) {
+        const imageRun = new ImageRun({
+          data: imageDetail.buffer,
+          transformation: {
+            width: 250,
+            height: 250,
+          },
+        });
+
+        const paragraphChildren = [imageRun];
+        
+        if (imageDetail.number) {
+            paragraphChildren.push(new TextRun({
+                text: imageDetail.number,
+                bold: true,
+                color: "FFFFFF",
+                size: 20,
+            }));
+        }
+
+        const imageParagraph = new Paragraph({ 
+          children: paragraphChildren,
+          alignment: AlignmentType.CENTER,
+          frame: imageDetail.number ? {
+            position: {
+                x: 100, // in twentieths of a point
+                y: 100,
+            },
+            width: 300, // example width
+            height: 300, // example height
+            anchor: {
+                horizontal: 'page',
+                vertical: 'page',
+            },
+            wrap: 'none',
+            zIndex: imageDetail.number ? 2 : 1,
+          } : undefined
+        });
+
+        if (imageDetail.number) {
+          content.push(new Paragraph({
+            children: [
+              new ImageRun({
+                data: imageDetail.buffer,
+                transformation: { width: 250, height: 250 },
+                floating: {
+                  horizontalPosition: { align: 'center' },
+                  verticalPosition: { align: 'center' },
+                }
+              }),
+              new TextRun({
+                text: imageDetail.number,
+                bold: true,
+                color: '000000',
+                size: 24,
+                font: 'Calibri'
+              })
+            ],
+          }));
+
+          const numberParagraph = new Paragraph({
+            children: [
+              new TextRun({
+                text: imageDetail.number,
+                bold: true,
+                color: "FFFFFF",
+                font: "Calibri",
+                size: 24, // 12pt
+              }),
+            ],
+            frame: {
+              position: {
+                x: 200, // in twentieths of a point
+                y: 200,
+              },
+              width: 400,
+              height: 400,
+              anchor: {
+                horizontal: 'page',
+                vertical: 'page'
+              },
+              wrap: 'none',
+              zIndex: 3
+            },
+          });
+          const paraWithImage = new Paragraph({ children: [imageRun] });
+          content = [paraWithImage];
+        } else {
+            content = [new Paragraph({ children: [imageRun] })];
+        }
+
+
+      }
+
       return new TableCell({
         children: content,
         width: {
@@ -74,7 +172,7 @@ export const generateDocx = async (files: File[]) => {
       },
     });
 
-    const children = [table];
+    const children: (Table | Paragraph)[] = [table];
     if (index < imageChunks.length - 1) {
       children.push(new Paragraph({ children: [new PageBreak()] }));
     }
@@ -96,9 +194,9 @@ export const generateDocx = async (files: File[]) => {
 
   doc.addSection(sections[0]);
   if(sections.length > 1) {
-    sections.slice(1).forEach(section => {
-        doc.addSection(section);
-    });
+    for (let i = 1; i < sections.length; i++) {
+        doc.addSection(sections[i]);
+    }
   }
 
 

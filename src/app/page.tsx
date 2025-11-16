@@ -11,16 +11,23 @@ import { generateDocx } from '@/lib/docx-generator';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 type FileWithPreview = {
   file: File;
   preview: string;
+  manualNumber?: string;
 };
+
+type NumberingOption = 'none' | 'auto' | 'manual';
 
 export default function Home() {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [numbering, setNumbering] = useState<NumberingOption>('none');
   const { toast } = useToast();
 
   const handleFiles = (selectedFiles: FileList | null) => {
@@ -30,6 +37,7 @@ export default function Home() {
         .map((file) => ({
           file,
           preview: URL.createObjectURL(file),
+          manualNumber: '',
         }));
       setFiles((prevFiles) => [...prevFiles, ...newFiles]);
     }
@@ -74,6 +82,14 @@ export default function Home() {
     });
   };
 
+  const handleManualNumberChange = (index: number, value: string) => {
+    setFiles(prevFiles => {
+      const newFiles = [...prevFiles];
+      newFiles[index].manualNumber = value;
+      return newFiles;
+    });
+  };
+
   const clearAll = () => {
     files.forEach((f) => URL.revokeObjectURL(f.preview));
     setFiles([]);
@@ -90,7 +106,16 @@ export default function Home() {
     }
     setIsGenerating(true);
     try {
-      await generateDocx(files.map((f) => f.file));
+      const imageDetails = files.map((f, index) => {
+        let number: string | undefined;
+        if (numbering === 'auto') {
+          number = (index + 1).toString();
+        } else if (numbering === 'manual') {
+          number = f.manualNumber || undefined;
+        }
+        return { file: f.file, number };
+      });
+      await generateDocx(imageDetails);
     } catch (error) {
       console.error('Failed to generate document:', error);
       toast({
@@ -156,8 +181,23 @@ export default function Home() {
               </div>
             ) : (
               <div>
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold">{files.length} image(s) selected</h3>
+                <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+                  <div className="flex items-center gap-4">
+                    <h3 className="font-semibold">{files.length} image(s) selected</h3>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="numbering-select">Numbering</Label>
+                      <Select value={numbering} onValueChange={(value: string) => setNumbering(value as NumberingOption)}>
+                        <SelectTrigger id="numbering-select" className="w-[180px]">
+                          <SelectValue placeholder="Select numbering" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="auto">Automatic</SelectItem>
+                          <SelectItem value="manual">Manual</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   <Button variant="outline" size="sm" onClick={clearAll}>
                     <X className="mr-2 h-4 w-4" /> Clear All
                   </Button>
@@ -182,7 +222,24 @@ export default function Home() {
                                     fill
                                     className="object-cover"
                                   />
-                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                   {(numbering === 'auto' || (numbering === 'manual' && fileWithPreview.manualNumber)) && (
+                                    <div className="absolute top-1 left-1 bg-black/50 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                                      {numbering === 'auto' ? globalIndex + 1 : fileWithPreview.manualNumber}
+                                    </div>
+                                  )}
+                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
+                                    {numbering === 'manual' && (
+                                      <div className="absolute top-0 left-0 right-0 p-1">
+                                        <Input
+                                          type="text"
+                                          placeholder="#"
+                                          value={fileWithPreview.manualNumber}
+                                          onChange={(e) => handleManualNumberChange(globalIndex, e.target.value)}
+                                          className="h-7 text-xs w-full bg-white/80"
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                      </div>
+                                    )}
                                     <Button
                                       variant="destructive"
                                       size="icon"
