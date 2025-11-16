@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect, useCallback, ChangeEvent, DragEvent } from 'react';
+import { useState, useMemo, useEffect, DragEvent, ChangeEvent } from 'react';
 import Image from 'next/image';
 import { FileImage, Upload, FileDown, Loader2, X, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 type FileWithPreview = {
   file: File;
@@ -28,6 +29,7 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [numbering, setNumbering] = useState<NumberingOption>('none');
+  const [showFilename, setShowFilename] = useState(false);
   const { toast } = useToast();
 
   const handleFiles = (selectedFiles: FileList | null) => {
@@ -72,7 +74,6 @@ export default function Home() {
     setIsDragging(false);
   };
 
-
   const removeFile = (index: number) => {
     setFiles((prevFiles) => {
       const newFiles = [...prevFiles];
@@ -113,7 +114,11 @@ export default function Home() {
         } else if (numbering === 'manual') {
           number = f.manualNumber || undefined;
         }
-        return { file: f.file, number };
+        return { 
+          file: f.file, 
+          number,
+          filename: showFilename ? f.file.name : undefined,
+        };
       });
       await generateDocx(imageDetails);
     } catch (error) {
@@ -182,7 +187,7 @@ export default function Home() {
             ) : (
               <div>
                 <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 flex-wrap">
                     <h3 className="font-semibold">{files.length} image(s) selected</h3>
                     <div className="flex items-center gap-2">
                       <Label htmlFor="numbering-select">Numbering</Label>
@@ -196,6 +201,15 @@ export default function Home() {
                           <SelectItem value="manual">Manual</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="show-filename" checked={showFilename} onCheckedChange={(checked) => setShowFilename(Boolean(checked))} />
+                      <label
+                        htmlFor="show-filename"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Show filenames
+                      </label>
                     </div>
                   </div>
                   <Button variant="outline" size="sm" onClick={clearAll}>
@@ -229,6 +243,13 @@ export default function Home() {
                                     fill
                                     className="object-cover"
                                   />
+                                   <div className="absolute bottom-0 text-center w-full z-10 p-1">
+                                    {showFilename && (
+                                      <div className="text-white text-[8px] font-semibold bg-black/50 rounded-sm inline-block px-1 py-0.5 truncate max-w-full">
+                                        {fileWithPreview.file.name}
+                                      </div>
+                                    )}
+                                  </div>
                                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
                                     {numbering === 'manual' && (
                                       <div className="absolute top-0 left-0 right-0 p-1">

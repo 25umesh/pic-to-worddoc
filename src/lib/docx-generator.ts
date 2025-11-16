@@ -5,6 +5,7 @@ import { saveAs } from 'file-saver';
 type ImageDetail = {
   file: File;
   number?: string;
+  filename?: string;
 };
 
 const readFileAsBuffer = (file: File): Promise<ArrayBuffer> => {
@@ -30,6 +31,7 @@ export const generateDocx = async (imageDetails: ImageDetail[]) => {
   const processedImageDetails = imageDetails.map((detail, index) => ({
     buffer: imageBuffers[index],
     number: detail.number,
+    filename: detail.filename,
   }));
 
   const imageChunks = [];
@@ -74,10 +76,25 @@ export const generateDocx = async (imageDetails: ImageDetail[]) => {
             alignment: AlignmentType.CENTER,
           }));
 
+          if (imageDetail.filename) {
+            cellChildren.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: imageDetail.filename,
+                    size: 16, // 8pt
+                    font: 'Calibri',
+                  })
+                ],
+                alignment: AlignmentType.CENTER,
+              })
+            );
+          }
+
 
           return new TableCell({
             children: cellChildren,
-            verticalAlign: VerticalAlign.CENTER,
+            verticalAlign: VerticalAlign.TOP,
             width: {
               size: 4535,
               type: WidthType.DXA,
@@ -102,7 +119,7 @@ export const generateDocx = async (imageDetails: ImageDetail[]) => {
             },
         });
       });
-      return new TableRow({ children: cells, height: { value: 3750, rule: HeightRule.EXACT } });
+      return new TableRow({ children: cells, height: { value: 3750, rule: HeightRule.AT_LEAST } });
     });
 
 
