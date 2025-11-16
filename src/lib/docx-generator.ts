@@ -115,7 +115,7 @@ export const generateDocx = async (imageDetails: ImageDetail[]) => {
             },
         });
       });
-      return new TableRow({ children: cells, height: { value: 3750, rule: HeightRule.AT_LEAST } });
+      return new TableRow({ children: cells, height: { value: 3750, rule: HeightRule.ATLEAST } });
     });
 
 
