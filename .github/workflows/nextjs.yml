@@ -63,29 +63,22 @@ jobs:
       - name: Install dependencies
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
 
-      - name: Build + Static Export (to ./out)
+      - name: "Build static site (Next.js output: export)"
+        env:
+          EXPORT_STATIC: "true"
         run: |
           set -e
-          # Prefer existing scripts if present
-          if [ -f package.json ]; then
-            # If using npm
-            if [ -f yarn.lock ]; then
-              if yarn run build && yarn run export; then
-                echo "Built with yarn scripts"
-                exit 0
-              fi
-            else
-              if npm run build && npm run export; then
-                echo "Built with npm scripts"
-                exit 0
-              fi
-            fi
+          # Build with static export enabled (Next 13+/15 output: export)
+          if [ "${{ steps.detect-package-manager.outputs.manager }}" = "yarn" ]; then
+            yarn run build
+          else
+            npm run build
           fi
-
-          # Fallback: run next build + next export -o out
-          echo "Falling back to direct next build + export"
-          npx --yes next build
-          npx --yes next export -o out
+          # Ensure ./out exists (Next writes static output here)
+          if [ ! -d "./out" ]; then
+            echo "Expected ./out directory not found after build" >&2
+            exit 1
+          fi
 
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
